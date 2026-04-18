@@ -1,10 +1,10 @@
 # eInsight — App Review Intelligence Tool
 
-Full-stack web app built for **eUp Group** that analyzes mobile app reviews, tags them with Claude (eUp taxonomy), and surfaces competitive insight across apps.
+Full-stack web app built for **eUp Group** that analyzes mobile app reviews, tags them with Google Gemini (eUp taxonomy), and surfaces competitive insight across apps.
 
 ```
 einsight/
-├── backend/    FastAPI + Anthropic Claude (Python)
+├── backend/    FastAPI + Google Gemini (Python)
 ├── frontend/   React + Vite + Tailwind
 ├── scraper/    Node.js microservice (app-store-scraper, google-play-scraper)
 ├── package.json  root runner (concurrently)
@@ -17,7 +17,7 @@ einsight/
 
 - Node.js ≥ 18 (LTS recommended)
 - Python ≥ 3.10
-- An Anthropic API key
+- A Google Gemini API key (free tier works — get one at https://aistudio.google.com/apikey)
 
 ---
 
@@ -25,7 +25,7 @@ einsight/
 
 ```bash
 cd einsight
-cp .env.example .env     # then edit .env and set ANTHROPIC_API_KEY=sk-ant-...
+cp .env.example .env     # then edit .env and set GEMINI_API_KEY=...
 make install             # installs root deps, scraper deps, frontend deps, backend venv
 ```
 
@@ -81,7 +81,7 @@ The Node scraper fetches ~200–500 recent reviews (no date / version filter —
 
 ## 6. Tagging taxonomy
 
-Claude (`claude-sonnet-4-20250514`) tags each review in batches of 20 and returns:
+Google Gemini (`gemini-1.5-flash`) tags each review in batches of 20 and returns:
 
 - **tag1…tag4** (from): `Content, Perceived Benefit, Features, UI/UX, Usability, User's feeling, Performance, Price, CS, Account, Subscription`
 - **need_type**: `Core Needs | Differential Needs | Add-on Needs`
@@ -111,17 +111,17 @@ The frontend uses the `/start` + SSE progress pair so you see “Đang phân tí
 `.env` at repo root:
 
 ```
-ANTHROPIC_API_KEY=sk-ant-...
-CLAUDE_MODEL=claude-sonnet-4-20250514   # optional override
+GEMINI_API_KEY=...
+GEMINI_MODEL=gemini-1.5-flash           # optional override
 SCRAPER_URL=http://localhost:4000       # backend → scraper
-BATCH_SIZE=20                           # reviews per Claude call
+BATCH_SIZE=20                           # reviews per Gemini call
 ```
 
 ---
 
 ## 9. Troubleshooting
 
-- **`ANTHROPIC_API_KEY is not set`** — edit `.env` and restart `make dev`.
+- **`GEMINI_API_KEY is not set`** — edit `.env` and restart `make dev`.
 - **Scraper returns 0 reviews** — the App Store country code in the URL may be wrong (e.g. `/vn/app/...` instead of `/us/app/...`). Google Play often needs `&hl=en&gl=us`.
 - **CSV parse error** — ensure the file is a real CSV (not XLSX). Save as *CSV UTF-8* from Sheets/Excel.
 - **CORS / proxy** — Vite dev server proxies `/api` to `http://localhost:8000`; no config needed in dev.
@@ -151,7 +151,7 @@ Three pieces deploy independently. Push this repo to GitHub first, then:
 ### Backend → Render
 
 1. Connect your GitHub repo on Render → **New Blueprint** and point it at [backend/render.yaml](backend/render.yaml) (or create manually with **Root Directory: `backend`**).
-2. Set the `ANTHROPIC_API_KEY` env var on Render (marked `sync: false` so you must provide it).
+2. Set the `GEMINI_API_KEY` env var on Render (marked `sync: false` so you must provide it).
 3. Start command is `uvicorn app.main:app --host 0.0.0.0 --port $PORT` (code lives in the `app/` submodule).
 4. CORS is already wired for any `*.vercel.app` subdomain + `localhost:5173`. Add more via `CORS_EXTRA_ORIGINS` (comma-separated).
 
@@ -166,7 +166,7 @@ Three pieces deploy independently. Push this repo to GitHub first, then:
 | Service | Var | Value |
 |---|---|---|
 | Frontend (Vercel) | `VITE_API_URL` | Render backend URL |
-| Backend (Render) | `ANTHROPIC_API_KEY` | your Anthropic key |
+| Backend (Render) | `GEMINI_API_KEY` | your Google Gemini key |
 | Backend (Render) | `SCRAPER_URL` | Render scraper URL |
 | Backend (Render) | `CORS_EXTRA_ORIGINS` | extra comma-separated origins (optional) |
 | Scraper (Render) | `PORT` | auto-provided by Render |

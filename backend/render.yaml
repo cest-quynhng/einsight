@@ -7,12 +7,12 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
-      - key: ANTHROPIC_API_KEY
+      - key: GEMINI_API_KEY
         sync: false
       - key: SCRAPER_URL
         value: https://einsight-scraper.onrender.com
-      - key: CLAUDE_MODEL
-        value: claude-sonnet-4-20250514
+      - key: GEMINI_MODEL
+        value: gemini-1.5-flash
       - key: BATCH_SIZE
         value: 20
       - key: CORS_EXTRA_ORIGINS

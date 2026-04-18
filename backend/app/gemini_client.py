@@ -3,20 +3,21 @@ import re
 import asyncio
 from typing import List, Dict, Any
 
-from anthropic import Anthropic
+import google.generativeai as genai
 
-from .config import ANTHROPIC_API_KEY, CLAUDE_MODEL, ALLOWED_TAGS, NEED_TYPES, SENTIMENTS
+from .config import GEMINI_API_KEY, GEMINI_MODEL, ALLOWED_TAGS, NEED_TYPES, SENTIMENTS
 
-_client: Anthropic | None = None
+_configured = False
 
 
-def get_client() -> Anthropic:
-    global _client
-    if _client is None:
-        if not ANTHROPIC_API_KEY:
-            raise RuntimeError("ANTHROPIC_API_KEY is not set. Add it to .env")
-        _client = Anthropic(api_key=ANTHROPIC_API_KEY)
-    return _client
+def _ensure_configured():
+    global _configured
+    if _configured:
+        return
+    if not GEMINI_API_KEY:
+        raise RuntimeError("GEMINI_API_KEY is not set. Add it to .env")
+    genai.configure(api_key=GEMINI_API_KEY)
+    _configured = True
 
 
 TAGGING_SYSTEM_PROMPT = f"""You are an expert mobile app review analyst for eUp Group.
@@ -52,6 +53,15 @@ Sentiment rules:
 
 Output ONLY valid JSON. Do not wrap in markdown fences. Do not add commentary.
 """
+
+
+INSIGHT_SYSTEM = """You are a product analyst summarizing app review analytics for a Vietnamese
+product team. Write a concise insight (2-4 sentences, mix of Vietnamese + English
+where natural) highlighting:
+1) Top strength (largest positive category)
+2) Biggest pain point (largest negative category)
+3) A competitive opportunity if competitor data is provided.
+Keep it punchy and actionable. No bullet lists, no markdown."""
 
 
 def _extract_json(text: str) -> Dict[str, Any]:
@@ -109,8 +119,29 @@ def _sanitize_tagged(item: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def _tagging_model():
+    _ensure_configured()
+    return genai.GenerativeModel(
+        GEMINI_MODEL,
+        system_instruction=TAGGING_SYSTEM_PROMPT,
+        generation_config={
+            "response_mime_type": "application/json",
+            "temperature": 0.2,
+            "max_output_tokens": 4000,
+        },
+    )
+
+
+def _insight_model():
+    _ensure_configured()
+    return genai.GenerativeModel(
+        GEMINI_MODEL,
+        system_instruction=INSIGHT_SYSTEM,
+        generation_config={"temperature": 0.4, "max_output_tokens": 400},
+    )
+
+
 def tag_batch_sync(batch: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    client = get_client()
     payload = [
         {
             "id": r.get("id") or str(i),
@@ -124,15 +155,11 @@ def tag_batch_sync(batch: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         "in the same order/ids.\n\n"
         f"{json.dumps(payload, ensure_ascii=False)}"
     )
-    resp = client.messages.create(
-        model=CLAUDE_MODEL,
-        max_tokens=4000,
-        system=TAGGING_SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": user_msg}],
-    )
-    text = "".join(
-        block.text for block in resp.content if getattr(block, "type", "") == "text"
-    )
+
+    model = _tagging_model()
+    resp = model.generate_content(user_msg)
+    text = (resp.text or "").strip()
+
     try:
         data = _extract_json(text)
         items = data.get("reviews", [])
@@ -153,35 +180,16 @@ async def tag_batch(batch: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return await asyncio.to_thread(tag_batch_sync, batch)
 
 
-INSIGHT_SYSTEM = """You are a product analyst summarizing app review analytics for a Vietnamese
-product team. Write a concise insight (2-4 sentences, mix of Vietnamese + English
-where natural) highlighting:
-1) Top strength (largest positive category)
-2) Biggest pain point (largest negative category)
-3) A competitive opportunity if competitor data is provided.
-Keep it punchy and actionable. No bullet lists, no markdown."""
-
-
 def insight_sync(summary: Dict[str, Any]) -> str:
     try:
-        client = get_client()
+        model = _insight_model()
     except RuntimeError:
         return ""
     try:
-        resp = client.messages.create(
-            model=CLAUDE_MODEL,
-            max_tokens=400,
-            system=INSIGHT_SYSTEM,
-            messages=[
-                {
-                    "role": "user",
-                    "content": "Analytics summary:\n" + json.dumps(summary, ensure_ascii=False),
-                }
-            ],
+        resp = model.generate_content(
+            "Analytics summary:\n" + json.dumps(summary, ensure_ascii=False)
         )
-        return "".join(
-            block.text for block in resp.content if getattr(block, "type", "") == "text"
-        ).strip()
+        return (resp.text or "").strip()
     except Exception as e:
         return f"(Không tạo được insight: {e})"
 

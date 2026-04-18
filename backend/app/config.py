@@ -4,8 +4,8 @@ from dotenv import load_dotenv
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 load_dotenv(os.path.join(ROOT, ".env"))
 
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
-CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "claude-sonnet-4-20250514")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
 SCRAPER_URL = os.getenv("SCRAPER_URL", "http://localhost:4000")
 BATCH_SIZE = int(os.getenv("BATCH_SIZE", "20"))
 

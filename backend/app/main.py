@@ -13,7 +13,7 @@ from .config import BATCH_SIZE
 from .schemas import UrlAnalyzeRequest, AnalyzeResponse, TaggedReview
 from .csv_parser import parse_csv
 from .scraper_client import scrape_reviews
-from .claude_client import tag_batch, generate_insight
+from .gemini_client import tag_batch, generate_insight
 from .aggregator import aggregate
 
 app = FastAPI(title="eInsight API", version="0.1.0")
