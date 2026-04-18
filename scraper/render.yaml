@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: einsight-scraper
+    runtime: node
+    plan: free
+    rootDir: scraper
+    buildCommand: npm install
+    startCommand: node index.js
+    envVars:
+      - key: PORT
+        value: 4000

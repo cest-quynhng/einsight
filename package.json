@@ -1,0 +1,16 @@
+{
+  "name": "einsight",
+  "version": "0.1.0",
+  "private": true,
+  "description": "eInsight - App Review Intelligence Tool for eUp Group",
+  "scripts": {
+    "dev": "concurrently -n scraper,backend,frontend -c magenta,cyan,green \"npm --prefix scraper run dev\" \"cd backend && . .venv/bin/activate && uvicorn app.main:app --reload --port 8000\" \"npm --prefix frontend run dev\"",
+    "dev:scraper": "npm --prefix scraper run dev",
+    "dev:backend": "cd backend && . .venv/bin/activate && uvicorn app.main:app --reload --port 8000",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "install:all": "npm --prefix scraper install && npm --prefix frontend install && cd backend && python3 -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

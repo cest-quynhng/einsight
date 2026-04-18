@@ -1,0 +1,17 @@
+{
+  "name": "einsight-scraper",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Node.js scraper microservice for App Store and Google Play reviews",
+  "type": "module",
+  "scripts": {
+    "dev": "node index.js",
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "app-store-scraper": "^0.18.0",
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "google-play-scraper": "^10.0.0"
+  }
+}
